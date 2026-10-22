@@ -12,4 +12,4 @@
 - [ ] Tests added or updated
 - [ ] README, `docs/API.md` and `CHANGELOG.md` updated if behaviour changed
 - [ ] No new dependencies, and the token is never logged or printed
-- [ ] Consent stays on the phone (no remote resume or permission grants)
+- [ ] Consent stays on the phone (no remote resume, permission grants or iPhone unlocking)

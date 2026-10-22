@@ -9,3 +9,7 @@ mcp/LICENSE
 .DS_Store
 .env
 *.log
+
+# go-ios pairing keys, if go-ios is ever run from the repo
+selfIdentity.plist
+peers/

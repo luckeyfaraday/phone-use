@@ -1,8 +1,9 @@
-// Talks to the Phone-Use app on the phone. Settings come from the environment or from
-// ~/.config/phone-use/config.json (written by `phone-use-mcp setup`):
-//   PHONE_USE_URL     default http://127.0.0.1:7333 (USB, through `adb forward`)
+// Talks to the phone-use API: the Phone-Use app on an Android phone, or `phone-use-mcp ios up` for
+// an iPhone. Settings come from the environment or from ~/.config/phone-use/config.json (written by
+// `phone-use-mcp setup` or `phone-use-mcp ios setup`):
+//   PHONE_USE_URL     default http://127.0.0.1:7333 (Android over USB, through `adb forward`)
 //   PHONE_USE_TOKEN   the phone's token
-//   ANDROID_SERIAL    which phone, if several are plugged in
+//   ANDROID_SERIAL    which Android phone, if several are plugged in
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -11,19 +12,31 @@ import { adb, hasAdb } from "./adb.mjs";
 export const CONFIG_DIR = process.env.PHONE_USE_CONFIG_DIR ?? path.join(os.homedir(), ".config", "phone-use");
 export const CONFIG_FILE = path.join(CONFIG_DIR, "config.json");
 export const DEFAULT_PORT = 7333;
+export const DEFAULT_IOS_PORT = 7334; // 7333 stays free for an Android phone on the same computer
 
-export function loadConfig() {
+/** Settings for clients. { env: false } reads only the saved file (for `ios up`, which serves them). */
+export function loadConfig({ env = true } = {}) {
+  const e = env ? process.env : {};
   let saved = {};
   try {
     saved = JSON.parse(fs.readFileSync(CONFIG_FILE, "utf8"));
   } catch (error) {
     if (error.code !== "ENOENT") throw new Error(`Cannot read ${CONFIG_FILE}: ${error.message}`);
   }
+  const platform = saved.platform === "ios" ? "ios" : "android";
+  const common = {
+    url: e.PHONE_USE_URL ?? saved.url ?? `http://127.0.0.1:${platform === "ios" ? DEFAULT_IOS_PORT : DEFAULT_PORT}`,
+    token: e.PHONE_USE_TOKEN ?? saved.token ?? "",
+  };
+  if (platform === "ios") {
+    // udid, bundleId and goIos are used by `ios up` on the computer the iPhone is connected to.
+    return { platform, ...common, udid: saved.udid, bundleId: saved.bundleId, ...(saved.goIos ? { goIos: saved.goIos } : {}) };
+  }
   return {
-    url: process.env.PHONE_USE_URL ?? saved.url ?? `http://127.0.0.1:${DEFAULT_PORT}`,
-    token: process.env.PHONE_USE_TOKEN ?? saved.token ?? "",
-    serial: process.env.ANDROID_SERIAL ?? saved.serial ?? undefined,
-    devicePort: Number(process.env.PHONE_USE_DEVICE_PORT ?? saved.devicePort ?? DEFAULT_PORT),
+    platform,
+    ...common,
+    serial: e.ANDROID_SERIAL ?? saved.serial ?? undefined,
+    devicePort: Number(e.PHONE_USE_DEVICE_PORT ?? saved.devicePort ?? DEFAULT_PORT),
   };
 }
 
@@ -43,7 +56,7 @@ const isLocal = (url) => /^http:\/\/(127\.0\.0\.1|localhost)(:|\/|$)/.test(url);
 
 /** Over USB the phone is reached through `adb forward`; (re)create it, since a replug or adb restart drops it. */
 export async function ensureForward(config) {
-  if (!config.serial || !isLocal(config.url) || !(await hasAdb())) return false;
+  if (config.platform === "ios" || !config.serial || !isLocal(config.url) || !(await hasAdb())) return false;
   const port = Number(new URL(config.url).port || DEFAULT_PORT);
   try {
     const target = { serial: config.serial, timeoutMs: 10_000 };
@@ -90,7 +103,8 @@ export class Phone {
         catch (retryError) { error = retryError; }
       }
       if (error.status === undefined) {
-        throw new Error(`The phone isn't answering at ${this.config.url}. Check the connection and run \`phone-use-mcp doctor\`.${method === "POST" ? " The action may have completed; check the screen before repeating it." : ""}`, { cause: error });
+        const check = this.config.platform === "ios" && isLocal(this.config.url) ? " Is `phone-use-mcp ios up` running?" : "";
+        throw new Error(`The phone isn't answering at ${this.config.url}.${check} Check the connection and run \`phone-use-mcp doctor\`.${method === "POST" ? " The action may have completed; check the screen before repeating it." : ""}`, { cause: error });
       }
       throw error;
     }

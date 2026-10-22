@@ -3,15 +3,24 @@ import fs from "node:fs";
 import { Phone } from "../lib/client.mjs";
 import { setup, doctor, connect, network } from "../lib/setup.mjs";
 import { serveMcp, tools, validateArguments } from "../lib/mcp.mjs";
+import { iosSetup, iosUp } from "../lib/ios/host.mjs";
+import { VERSION } from "../lib/version.mjs";
 
-const HELP = `Phone-Use — let an agent use your Android phone
+const HELP = `Phone-Use — let an agent use your Android phone or iPhone
 
+Android (USB setup, then optionally Wi-Fi/Tailscale):
   phone-use-mcp setup [--serial ID] [--apk FILE] [--port N] [--timeout SECONDS]
+  phone-use-mcp network on|off [--serial ID] Enable/disable phone network access via USB
+
+iPhone (runs on the computer the iPhone is plugged into; needs go-ios and WebDriverAgent):
+  phone-use-mcp ios setup [--udid ID] [--bundle-id ID] [--port N] [--go-ios PATH]
+  phone-use-mcp ios up [--network] [--wda-url URL] Keep the iPhone connected and serve it
+
+Both:
   phone-use-mcp doctor
   phone-use-mcp mcp                         MCP over stdio (also the default)
   phone-use-mcp config                      Print an MCP client configuration
   phone-use-mcp connect URL                 Save a tested Wi-Fi/Tailscale connection
-  phone-use-mcp network on|off [--serial ID] Enable/disable phone network access via USB
   phone-use-mcp status
   phone-use-mcp screen
   phone-use-mcp apps [SEARCH]
@@ -23,10 +32,10 @@ const HELP = `Phone-Use — let an agent use your Android phone
   phone-use-mcp swipe X1 Y1 X2 Y2 [MS]
   phone-use-mcp key back|home|recents|notifications|quick_settings
   phone-use-mcp screenshot FILE [--scale 0.25..1]
-  phone-use-mcp pause                       Resume by tapping Resume on the phone
+  phone-use-mcp pause                       Android: resume on the phone. iPhone: locks it; unlock to resume
 
-Setup requires Android 7+, USB debugging and adb. Enable accessibility and
-approve screen sharing on the phone. Use --help or --version for information.
+Android setup requires Android 7+, USB debugging and adb. iPhone setup is in
+docs/IOS.md. Use --help or --version for information.
 `;
 
 function parseOptions(args, allowed) {
@@ -52,6 +61,10 @@ function number(value) {
   return n;
 }
 
+function port(value) {
+  if (value !== undefined && (!Number.isInteger(value) || value < 1 || value > 65535)) throw new Error("--port must be an integer between 1 and 65535.");
+}
+
 function count(values, min, max = min) {
   if (values.length < min || values.length > max) throw new Error("Wrong number of arguments. See phone-use-mcp --help.");
 }
@@ -59,7 +72,7 @@ function count(values, min, max = min) {
 async function main() {
   const [command = "mcp", ...args] = process.argv.slice(2);
   if (["help", "--help", "-h"].includes(command)) return console.log(HELP);
-  if (["version", "--version", "-v"].includes(command)) return console.log("0.1.0");
+  if (["version", "--version", "-v"].includes(command)) return console.log(VERSION);
   if (command === "mcp") { count(args, 0); return serveMcp(); }
   if (command === "config") {
     count(args, 0);
@@ -69,7 +82,7 @@ async function main() {
     const { values, options } = parseOptions(args, { serial: "string", apk: "string", port: "number", timeout: "number" });
     count(values, 0);
     if (options.timeout !== undefined && (options.timeout <= 0 || options.timeout > 3600)) throw new Error("--timeout must be between 0 and 3600 seconds.");
-    if (options.port !== undefined && (!Number.isInteger(options.port) || options.port < 1 || options.port > 65535)) throw new Error("--port must be an integer between 1 and 65535.");
+    port(options.port);
     await setup(options);
     console.error("Run phone-use-mcp config for the agent configuration, or phone-use-mcp screen to try it.");
     return;
@@ -80,6 +93,22 @@ async function main() {
     console.log(JSON.stringify(result, null, 2));
     if (!result.ok) process.exitCode = 1;
     return;
+  }
+  if (command === "ios") {
+    const [sub, ...rest] = args;
+    if (sub === "setup") {
+      const { values, options } = parseOptions(rest, { udid: "string", "bundle-id": "string", port: "number", "go-ios": "string" });
+      count(values, 0);
+      port(options.port);
+      await iosSetup({ udid: options.udid, bundleId: options["bundle-id"], port: options.port, goIos: options["go-ios"] });
+      return;
+    }
+    if (sub === "up") {
+      const { values, options } = parseOptions(rest, { network: "boolean", "wda-url": "string", "go-ios": "string" });
+      count(values, 0);
+      return iosUp({ network: options.network, wdaUrl: options["wda-url"], goIos: options["go-ios"] });
+    }
+    throw new Error("Use phone-use-mcp ios setup or phone-use-mcp ios up. See --help.");
   }
   if (command === "connect") { count(args, 1); return console.log(JSON.stringify(await connect(args[0]), null, 2)); }
   if (command === "network") {

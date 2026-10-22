@@ -2,7 +2,7 @@ import fs from "node:fs";
 import { fileURLToPath } from "node:url";
 import { setTimeout as delay } from "node:timers/promises";
 import { adb, devices } from "./adb.mjs";
-import { Phone, loadConfig, saveConfig, CONFIG_FILE } from "./client.mjs";
+import { Phone, loadConfig, saveConfig, CONFIG_FILE, DEFAULT_PORT } from "./client.mjs";
 
 const TOKEN_URI = "content://dev.phoneuse.token/token";
 const APK = fileURLToPath(new URL("../phone-use.apk", import.meta.url));
@@ -86,27 +86,38 @@ export async function network(enabled, serial = loadConfig().serial, deps = {}) 
   return { network: enabled };
 }
 
-export async function connect(url) {
+export async function connect(url, deps = {}) {
   const parsed = new URL(url);
   if (!["http:", "https:"].includes(parsed.protocol) || parsed.username || parsed.password || parsed.search || parsed.hash || parsed.pathname !== "/") {
     throw new Error("Use an HTTP(S) origin such as http://100.x.y.z:7333, without a path or credentials.");
   }
-  const config = { ...loadConfig(), url: parsed.origin };
-  const status = await new Phone(config).get("/status", { reconnect: false, timeoutMs: 5000 });
-  saveConfig(config);
+  const current = loadConfig();
+  const status = await (deps.makePhone ?? ((c) => new Phone(c)))({ ...current, url: parsed.origin }).get("/status", { reconnect: false, timeoutMs: 5000 });
+  const saved = loadConfig({ env: false });
+  let config;
+  if (status.platform === "ios") {
+    // If this computer runs `ios up` for that iPhone, keep its settings too.
+    const host = saved.platform === "ios" ? Object.fromEntries(["udid", "bundleId", "goIos"].filter((k) => saved[k]).map((k) => [k, saved[k]])) : {};
+    config = { platform: "ios", url: parsed.origin, token: current.token, ...host };
+  } else {
+    config = { url: parsed.origin, token: current.token, ...(current.platform === "android" && current.serial ? { serial: current.serial } : {}), devicePort: current.platform === "android" ? current.devicePort : DEFAULT_PORT };
+  }
+  (deps.saveConfig ?? saveConfig)(config);
   return status;
 }
 
 export async function doctor() {
   const config = loadConfig();
   const checks = [];
-  try {
-    const found = await devices();
-    checks.push({ check: "adb", ok: true, devices: found });
-  } catch (error) {
-    checks.push({ check: "adb", ok: false, detail: error.message });
+  if (config.platform === "android") {
+    try {
+      const found = await devices();
+      checks.push({ check: "adb", ok: true, devices: found });
+    } catch (error) {
+      checks.push({ check: "adb", ok: false, detail: error.message });
+    }
   }
-  checks.push({ check: "configuration", ok: Boolean(config.token), url: config.url, serial: config.serial ?? null });
+  checks.push({ check: "configuration", ok: Boolean(config.token), platform: config.platform, url: config.url, ...(config.platform === "ios" ? { udid: config.udid ?? null } : { serial: config.serial ?? null }) });
   try {
     const status = await new Phone(config).get("/status", { timeoutMs: 5000 });
     checks.push({ check: "phone", ok: true, ...status });

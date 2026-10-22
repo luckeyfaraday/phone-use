@@ -29,14 +29,14 @@ body:
     attributes:
       label: Phone-Use version
       description: Output of `phone-use-mcp --version`.
-      placeholder: 0.1.0
+      placeholder: 0.2.0
     validations:
       required: true
   - type: input
     id: device
     attributes:
-      label: Phone and Android version
-      placeholder: Pixel 6, Android 14
+      label: Phone and OS version
+      placeholder: Pixel 6, Android 14 / iPhone 15, iOS 26
     validations:
       required: true
   - type: dropdown

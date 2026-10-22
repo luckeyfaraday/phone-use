@@ -19,13 +19,14 @@ android/        Android app (Java, bare SDK tools, no Gradle)
 mcp/            Node.js CLI and MCP server (no npm dependencies)
   bin/          phone-use-mcp entry point
   lib/          adb wrapper, HTTP client, setup, MCP transport
+  lib/ios/      iPhone host: go-ios, WebDriverAgent client, screen reader, PNG, API server
   test/         node:test suites
 docs/           HTTP API, testing, releasing
 ```
 
 ## Development setup
 
-You need JDK 11+, an Android SDK platform and build-tools, `zip`, Node.js 18+ and `adb`.
+You need JDK 11+, an Android SDK platform and build-tools, `zip`, Node.js 18+ and `adb`. iPhone work also needs [go-ios](https://github.com/danielpaulus/go-ios/releases) and an iPhone with WebDriverAgent installed (see [docs/IOS.md](docs/IOS.md)).
 
 ```sh
 git clone https://github.com/luckeyfaraday/phone-use.git
@@ -43,7 +44,7 @@ To try your build, run `node mcp/bin/phone-use-mcp.mjs setup --apk android/build
 
 1. Fork the repository and create a branch from `main`.
 2. Keep the change focused: one fix or feature per pull request.
-3. Add or update tests. The Node suites use fakes for `adb` and the phone (see `mcp/test/setup.test.mjs`). Changes to the Android HTTP parser belong in `android/test/HttpRequestTest.java`.
+3. Add or update tests. The Node suites use fakes for `adb`, the phone and WebDriverAgent (see `mcp/test/setup.test.mjs` and `mcp/test/ios.test.mjs`). Changes to the Android HTTP parser belong in `android/test/HttpRequestTest.java`.
 4. For behaviour on the phone, work through the hardware checklist in [docs/TESTING.md](docs/TESTING.md) and say in the pull request what you tested on.
 5. Update the README, `docs/API.md` and `CHANGELOG.md` (under **Unreleased**) when behaviour changes.
 6. Make sure CI passes.
@@ -51,7 +52,7 @@ To try your build, run `node mcp/bin/phone-use-mcp.mjs setup --apk android/build
 ## Guidelines
 
 - **No new dependencies.** The APK uses only the Android SDK, and the CLI uses only Node's standard library. Discuss it in an issue first if you think one is unavoidable.
-- **Consent stays on the phone.** Setup must never grant accessibility or screen-sharing permission on the user's behalf, and nothing may resume access remotely after Stop.
+- **Consent stays on the phone.** Setup must never grant accessibility or screen-sharing permission on the user's behalf, nothing may resume access remotely after Stop, and nothing may unlock an iPhone.
 - **Never log or print the token.**
 - **Never retry a mutating action automatically:** its effect may already have happened.
 - Match the style of the surrounding code. Keep error messages specific and actionable.
