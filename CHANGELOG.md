@@ -4,6 +4,21 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-10-23
+
+### Added
+
+- iPhone support. `phone-use-mcp ios setup` and `phone-use-mcp ios up` run [WebDriverAgent](https://github.com/appium/WebDriverAgent) over USB with [go-ios](https://github.com/danielpaulus/go-ios) and serve the same HTTP API and MCP tools as the Android app. Locking the iPhone pauses the agent; unlocking it on the phone resumes. See [docs/IOS.md](docs/IOS.md).
+- `phone-use-mcp connect` remembers whether the remote phone is an iPhone.
+
+### Changed
+
+- Tool descriptions and agent instructions now cover both Android and iPhone.
+
+### Fixed
+
+- `phone_list_apps` now matches package names regardless of case, like `phone_open_app`.
+
 ## [0.1.0] - 2026-10-22
 
 First development preview.
@@ -17,5 +32,6 @@ First development preview.
 - One-command USB setup that waits for the user to enable accessibility on the phone, and saves the connection only once it works.
 - Optional network mode for Wi-Fi or Tailscale, token-authenticated, with `network on|off` and `connect`.
 
-[Unreleased]: https://github.com/luckeyfaraday/phone-use/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/luckeyfaraday/phone-use/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/luckeyfaraday/phone-use/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/luckeyfaraday/phone-use/releases/tag/v0.1.0

@@ -1,7 +1,7 @@
 {
   "name": "phone-use-mcp",
-  "version": "0.1.0",
-  "description": "Let AI agents use an Android phone: read any app's screen, tap, type, scroll, take screenshots. MCP server + CLI + one-command USB setup.",
+  "version": "0.2.0",
+  "description": "Let AI agents use an Android phone or iPhone: read any app's screen, tap, type, scroll, take screenshots. MCP server + CLI.",
   "type": "module",
   "bin": {
     "phone-use-mcp": "bin/phone-use-mcp.mjs"
@@ -29,7 +29,10 @@
     "accessibility",
     "agent",
     "claude",
-    "codex"
+    "codex",
+    "iphone",
+    "ios",
+    "webdriveragent"
   ],
   "repository": {
     "type": "git",
