@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="accessibility_description">Lets your AI agent read what is on screen in any app and tap, type and swipe for you. A pill with a Stop button shows whenever the agent acts.</string>
+</resources>

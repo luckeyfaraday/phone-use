@@ -1,0 +1,39 @@
+{
+  "name": "phone-use-mcp",
+  "version": "0.1.0",
+  "description": "Let AI agents use an Android phone: read any app's screen, tap, type, scroll, take screenshots. MCP server + CLI + one-command USB setup.",
+  "type": "module",
+  "bin": {
+    "phone-use-mcp": "bin/phone-use-mcp.mjs"
+  },
+  "files": [
+    "bin",
+    "lib",
+    "scripts",
+    "phone-use.apk",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "test": "node --test test/*.test.mjs",
+    "prepack": "node scripts/prepare-package.mjs"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": [
+    "mcp",
+    "android",
+    "phone-use",
+    "computer-use",
+    "accessibility",
+    "agent",
+    "claude",
+    "codex"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/luckeyfaraday/phone-use.git"
+  },
+  "license": "MIT"
+}

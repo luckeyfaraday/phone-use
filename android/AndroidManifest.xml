@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="dev.phoneuse"
+    android:versionCode="1"
+    android:versionName="0.1.0">
+
+    <!-- Android 7+: dispatchGesture (API 24) is the oldest piece phone-use needs. -->
+    <uses-sdk android:minSdkVersion="24" android:targetSdkVersion="29" />
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Screenshots: MediaProjection must be held by a foreground service. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+
+    <application
+        android:label="Phone-Use"
+        android:icon="@mipmap/icon"
+        android:allowBackup="false"
+        android:usesCleartextTraffic="true"
+        android:theme="@style/App">
+
+        <activity android:name=".MainActivity" android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- The agent's eyes and hands: reads any app's screen, taps, types, swipes. -->
+        <service
+            android:name=".PhoneUseService"
+            android:label="Phone-Use"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+            <meta-data android:name="android.accessibilityservice" android:resource="@xml/accessibility" />
+        </service>
+
+        <activity
+            android:name=".CaptureActivity"
+            android:theme="@style/Invisible"
+            android:excludeFromRecents="true"
+            android:taskAffinity="dev.phoneuse.capture"
+            android:exported="false" />
+        <service
+            android:name=".CaptureService"
+            android:foregroundServiceType="mediaProjection"
+            android:exported="false" />
+
+        <!-- Hands the token to `adb shell` only (checked in code); other apps get nothing. -->
+        <provider
+            android:name=".TokenProvider"
+            android:authorities="dev.phoneuse.token"
+            android:exported="true" />
+    </application>
+</manifest>

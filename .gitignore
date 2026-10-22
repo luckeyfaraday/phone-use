@@ -1,0 +1,11 @@
+android/build/
+android/*.keystore
+android/*.jks
+node_modules/
+mcp/phone-use.apk
+mcp/README.md
+mcp/LICENSE
+*.tgz
+.DS_Store
+.env
+*.log
