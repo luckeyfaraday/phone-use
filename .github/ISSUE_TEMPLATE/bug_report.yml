@@ -1,0 +1,67 @@
+name: Bug report
+description: Something doesn't work as documented.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting. **Don't paste your token** (`config.json` or `PHONE_USE_TOKEN`). `phone-use-mcp doctor` output is safe to share.
+        Security problems go through [private reporting](https://github.com/luckeyfaraday/phone-use/security/advisories/new) instead.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What you did, what you expected, and what happened instead.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. phone-use-mcp setup
+        2. Ask the agent to …
+        3. …
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Phone-Use version
+      description: Output of `phone-use-mcp --version`.
+      placeholder: 0.1.0
+    validations:
+      required: true
+  - type: input
+    id: device
+    attributes:
+      label: Phone and Android version
+      placeholder: Pixel 6, Android 14
+    validations:
+      required: true
+  - type: dropdown
+    id: connection
+    attributes:
+      label: Connection
+      options:
+        - USB
+        - Wi-Fi / Tailscale
+    validations:
+      required: true
+  - type: input
+    id: client
+    attributes:
+      label: Agent or MCP client
+      description: Leave blank if you used the CLI directly.
+      placeholder: Claude Code 2.x, Codex, Cursor, …
+  - type: textarea
+    id: doctor
+    attributes:
+      label: phone-use-mcp doctor output
+      render: json
+  - type: textarea
+    id: logs
+    attributes:
+      label: Error output or logcat
+      description: "Optional: CLI errors, or `adb logcat -d -s phone-use`."
+      render: text

@@ -35,5 +35,10 @@
     "type": "git",
     "url": "git+https://github.com/luckeyfaraday/phone-use.git"
   },
-  "license": "MIT"
+  "homepage": "https://github.com/luckeyfaraday/phone-use#readme",
+  "bugs": {
+    "url": "https://github.com/luckeyfaraday/phone-use/issues"
+  },
+  "license": "MIT",
+  "author": "luckeyfaraday"
 }
