@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { setup, selectDevice, parseSettings } from "../lib/setup.mjs";
+import { setup, selectDevice, parseSettings, network } from "../lib/setup.mjs";
 
 const token = "a".repeat(48);
 test("device selection requires a specific, authorized device", () => {
@@ -73,4 +73,11 @@ test("setup preserves an existing correct forward and reports authentication fai
   await assert.rejects(setup({}, h.deps), /wrong token/);
   assert(!h.calls.some(({ args }) => args.includes("--no-rebind")));
   assert.deepEqual(h.saved, []);
+});
+
+test("network toggle reports a phone-side failure instead of claiming success", async () => {
+  const devices = async () => [{ serial: "phone", state: "device" }];
+  const failed = "Error while accessing provider:dev.phoneuse.token\njava.lang.IllegalStateException: could not reopen the listener; network access is still off\n\tat android.os.Parcel.readException(Parcel.java:1691)";
+  await assert.rejects(network(true, "phone", { devices, adb: async () => failed }), /Could not turn network access on: could not reopen the listener; network access is still off\./);
+  assert.deepEqual(await network(false, "phone", { devices, adb: async () => "" }), { network: false });
 });

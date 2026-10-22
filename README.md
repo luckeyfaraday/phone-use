@@ -116,7 +116,7 @@ See [the HTTP API](docs/API.md), [testing and compatibility](docs/TESTING.md), a
 
 - **Unauthorized device:** unlock the phone and accept its USB debugging prompt. Rerun `adb devices`.
 - **Accessibility is unavailable:** some Android versions restrict accessibility for sideloaded apps. Review Android's app information screen and its restricted-settings controls yourself, then return to accessibility settings.
-- **Phone not answering:** run `phone-use-mcp doctor`. Check the cable or network, selected device, and accessibility setting. Rerun setup after reinstalling the app, because its token changes.
+- **Phone not answering:** run `phone-use-mcp doctor`. Check the cable or network, selected device, and accessibility setting. Android may disable accessibility after a force-stop; enable it again in settings. Rerun setup after reinstalling the app, because its token changes.
 - **Screenshots need approval:** open Phone-Use and allow screen sharing. Android may end the session when the phone locks, the app stops, or you stop sharing. Protected app content can appear blank.
 - **An action timed out:** read the screen before retrying. The action may have happened even if its response was lost; mutations are never retried automatically.
 - **Wrong signature on update:** use the same signing key, or uninstall the previous standalone Phone-Use build before installing. Uninstalling resets its pairing token and permissions.

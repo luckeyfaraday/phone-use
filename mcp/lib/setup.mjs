@@ -71,9 +71,18 @@ export async function setup(options = {}, deps = {}) {
   throw new Error("Phone-Use is not enabled yet. Complete the accessibility step on the phone, then rerun setup. Existing computer settings were kept.");
 }
 
-export async function network(enabled, serial = loadConfig().serial) {
-  const device = selectDevice(await devices(), serial);
-  await adb(["shell", "content", "update", "--uri", TOKEN_URI, "--bind", `network:i:${enabled ? 1 : 0}`], { serial: device.serial });
+/** `adb shell content` exits 0 even when the app throws, so look for the error in its output. */
+export function providerError(output) {
+  if (!/^Error while accessing provider/m.test(output)) return null;
+  return output.match(/Exception: (.+)/)?.[1].trim() ?? "the phone rejected the change";
+}
+
+export async function network(enabled, serial = loadConfig().serial, deps = {}) {
+  const device = selectDevice(await (deps.devices ?? devices)(), serial);
+  // `content` prints provider errors on stderr; merge it so the check below sees them.
+  const output = await (deps.adb ?? adb)(["shell", "content", "update", "--uri", TOKEN_URI, "--bind", `network:i:${enabled ? 1 : 0}`, "2>&1"], { serial: device.serial });
+  const error = providerError(output);
+  if (error) throw new Error(`Could not turn network access ${enabled ? "on" : "off"}: ${error}.`);
   return { network: enabled };
 }
 

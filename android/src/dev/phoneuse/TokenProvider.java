@@ -56,9 +56,15 @@ public class TokenProvider extends ContentProvider {
         requireShell();
         int changed = 0;
         if (values.containsKey("network")) {
+            boolean previous = Prefs.network(getContext());
             Prefs.setNetwork(getContext(), values.getAsInteger("network") == 1);
             PhoneUseService service = PhoneUseService.instance;
-            if (service != null) service.restartServer();
+            if (service != null && !service.restartServer()) {
+                // Put the old listener back so the phone stays reachable, then tell the caller.
+                Prefs.setNetwork(getContext(), previous);
+                service.restartServer();
+                throw new IllegalStateException("could not reopen the listener; network access is still " + (previous ? "on" : "off"));
+            }
             changed++;
         }
         if (values.containsKey("regenerate") && values.getAsInteger("regenerate") == 1) {

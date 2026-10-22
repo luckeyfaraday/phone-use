@@ -86,7 +86,8 @@ export class Phone {
       // Not reachable over USB? Re-create the adb forward once and retry.
       if (method === "GET" && reconnect && error.status === undefined && (await ensureForward(this.config))) {
         this.forwarded = true;
-        return attempt();
+        try { return await attempt(); }
+        catch (retryError) { error = retryError; }
       }
       if (error.status === undefined) {
         throw new Error(`The phone isn't answering at ${this.config.url}. Check the connection and run \`phone-use-mcp doctor\`.${method === "POST" ? " The action may have completed; check the screen before repeating it." : ""}`, { cause: error });

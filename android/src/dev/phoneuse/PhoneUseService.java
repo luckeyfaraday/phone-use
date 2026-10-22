@@ -12,6 +12,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.SystemClock;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.util.TypedValue;
@@ -28,7 +29,9 @@ import org.json.JSONObject;
 
 import java.io.BufferedInputStream;
 import java.io.OutputStream;
+import java.net.BindException;
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.URLDecoder;
@@ -75,6 +78,7 @@ public class PhoneUseService extends AccessibilityService {
     private final List<AccessibilityNodeInfo> lastElements = new ArrayList<>();
     private final Object requestLock = new Object();
     private volatile ServerSocket server;
+    private Thread listener;
     private volatile long lastActionAt;
     private TextView pill;
 
@@ -111,24 +115,52 @@ public class PhoneUseService extends AccessibilityService {
 
     // ------------------------------------------------------------------ HTTP
 
-    /** (Re)open the listener: this phone only, or every interface when network mode is on. */
-    synchronized void restartServer() {
+    /** (Re)open the listener: this phone only, or every interface when network mode is on. False if it couldn't. */
+    synchronized boolean restartServer() {
         closeServer();
-        try {
-            String host = Prefs.network(this) ? "0.0.0.0" : "127.0.0.1";
-            ServerSocket socket = new ServerSocket(Prefs.port(this), 8, InetAddress.getByName(host));
-            server = socket;
-            Thread listener = new Thread(() -> serve(socket), "phone-use-http");
-            listener.setDaemon(true);
-            listener.start();
-        } catch (Exception e) {
-            Log.e(TAG, "could not start listener", e);
+        String host = Prefs.network(this) ? "0.0.0.0" : "127.0.0.1";
+        for (int attempt = 1; ; attempt++) {
+            ServerSocket socket = null;
+            try {
+                socket = new ServerSocket();
+                socket.setReuseAddress(true);
+                socket.bind(new InetSocketAddress(InetAddress.getByName(host), Prefs.port(this)), 8);
+                ServerSocket bound = socket;
+                server = bound;
+                listener = new Thread(() -> serve(bound), "phone-use-http");
+                listener.setDaemon(true);
+                listener.start();
+                return true;
+            } catch (Exception e) {
+                closeQuietly(socket);
+                if (!(e instanceof BindException) || attempt == 20) {
+                    Log.e(TAG, "could not start listener", e);
+                    return false;
+                }
+                SystemClock.sleep(50);
+            }
         }
     }
 
     private void closeServer() {
+        Thread old = listener;
+        closeQuietly(server);
+        server = null;
+        listener = null;
+        // The kernel keeps the port bound until the old listener's accept() returns, so binding again
+        // straight away fails with "Address already in use". Wait for that thread to finish.
+        if (old != null && old != Thread.currentThread()) {
+            try {
+                old.join(1000);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
+    }
+
+    private static void closeQuietly(ServerSocket socket) {
         try {
-            if (server != null) server.close();
+            if (socket != null) socket.close();
         } catch (Exception ignored) {
         }
     }
