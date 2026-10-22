@@ -29,6 +29,9 @@ jobs:
         with:
           node-version: '22'
       - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+          log-accepted-android-sdk-licenses: false
       - run: sdkmanager 'platforms;android-36' 'build-tools;36.0.0'
       - run: ./android/test.sh
       - run: ./android/build.sh
